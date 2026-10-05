@@ -1,3 +1,7 @@
+## 3.25.2
+
+* Fixes crashes from WebKit callbacks and codec replies that outlive plugin teardown.
+
 ## 3.25.1
 
 * Relands update to prevent message calls when application will terminate.

@@ -73,6 +73,24 @@ class WebViewFlutterPluginTests: XCTestCase {
       finalizer = nil
       waitForExpectations(timeout: 5.0)
     }
+
+    func testCodecRetainsRegistrarUntilEncodingCompletesAfterTeardown() {
+      let plugin = WebViewFlutterPlugin(binaryMessenger: TestBinaryMessenger())
+      let registrarReference = WeakTestReference(plugin.proxyApiRegistrar)
+      var codec: FlutterStandardMessageCodec? = plugin.proxyApiRegistrar!.codec
+
+      (plugin as FlutterApplicationLifeCycleDelegate).applicationWillTerminate!(
+        UIApplication.shared)
+
+      XCTAssertNil(plugin.proxyApiRegistrar)
+      XCTAssertNotNil(registrarReference.value)
+
+      let encodedValue = codec!.encode(UIView())
+      XCTAssertNil(codec!.decode(encodedValue))
+
+      codec = nil
+      XCTAssertNil(registrarReference.value)
+    }
   #endif
 }
 
@@ -81,5 +99,13 @@ class TestFinalizer {
 
   deinit {
     Self.onDeinit?()
+  }
+}
+
+final class WeakTestReference<Value: AnyObject> {
+  weak var value: Value?
+
+  init(_ value: Value?) {
+    self.value = value
   }
 }
