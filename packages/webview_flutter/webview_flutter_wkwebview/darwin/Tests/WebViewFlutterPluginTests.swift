@@ -91,6 +91,25 @@ class WebViewFlutterPluginTests: XCTestCase {
       codec = nil
       XCTAssertNil(registrarReference.value)
     }
+
+    func testCallbackRegistrarCycleIsReleasedOnTeardown() {
+      let plugin = WebViewFlutterPlugin(binaryMessenger: TestBinaryMessenger())
+      let registrarReference = WeakTestReference(plugin.proxyApiRegistrar)
+      autoreleasepool {
+        let handler = ScriptMessageHandlerImpl(
+          api: plugin.proxyApiRegistrar!.apiDelegate.pigeonApiWKScriptMessageHandler(
+            plugin.proxyApiRegistrar!),
+          registrar: plugin.proxyApiRegistrar!)
+        _ = plugin.proxyApiRegistrar!.instanceManager.addHostCreatedInstance(handler)
+        XCTAssertNotNil(registrarReference.value)
+
+        (plugin as FlutterApplicationLifeCycleDelegate).applicationWillTerminate!(
+          UIApplication.shared)
+      }
+
+      XCTAssertNil(plugin.proxyApiRegistrar)
+      XCTAssertNil(registrarReference.value)
+    }
   #endif
 }
 

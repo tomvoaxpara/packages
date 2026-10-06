@@ -28,18 +28,23 @@ class ScriptMessageHandlerProxyAPITests: XCTestCase {
     XCTAssertEqual(api.didReceiveScriptMessageArgs, [controller, message])
   }
 
-  @MainActor func testIgnoresMessageAfterRegistrarDeallocation() {
+  @MainActor func testHandlesMessageAfterRegistrarOwnerIsReleased() {
     let api = TestScriptMessageHandlerApi()
     var registrar: TestProxyApiRegistrar? = TestProxyApiRegistrar()
-    let instance = ScriptMessageHandlerImpl(api: api, registrar: registrar!)
+    var instance: ScriptMessageHandlerImpl? = ScriptMessageHandlerImpl(
+      api: api, registrar: registrar!)
     let registrarReference = WeakTestReference(registrar)
+    let controller = WKUserContentController()
+    let message = WKScriptMessage()
 
     registrar = nil
+    XCTAssertNotNil(registrarReference.value)
+
+    instance!.userContentController(controller, didReceive: message)
+    XCTAssertEqual(api.didReceiveScriptMessageArgs, [controller, message])
+
+    instance = nil
     XCTAssertNil(registrarReference.value)
-
-    instance.userContentController(WKUserContentController(), didReceive: WKScriptMessage())
-
-    XCTAssertNil(api.didReceiveScriptMessageArgs)
   }
 }
 

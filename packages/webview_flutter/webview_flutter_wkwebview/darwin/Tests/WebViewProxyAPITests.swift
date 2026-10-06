@@ -31,6 +31,22 @@ class WebViewProxyAPITests: XCTestCase {
     XCTAssertNotNil(instance)
   }
 
+  @MainActor func testHandlesKVOCallbackAfterRegistrarOwnerIsReleased() {
+    var registrar: TestProxyApiRegistrar? = TestProxyApiRegistrar()
+    let api = webViewProxyAPI(forRegistrar: registrar!)
+    let instance = WebViewImpl(
+      api: api.pigeonApiWKWebView, registrar: registrar!, frame: .zero,
+      configuration: WKWebViewConfiguration())
+    let registrarReference = WeakTestReference(registrar)
+    registrar!.ignoreCallsToDart = true
+
+    registrar = nil
+    XCTAssertNotNil(registrarReference.value)
+
+    instance.observeValue(
+      forKeyPath: "estimatedProgress", of: instance, change: nil, context: nil)
+  }
+
   @MainActor func testConfiguration() {
     let registrar = TestProxyApiRegistrar()
     let api = webViewProxyAPI(forRegistrar: registrar)
